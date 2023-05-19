@@ -6,12 +6,14 @@ class ToDoTile extends StatelessWidget {
   bool taskCompleted;
   Function(bool?) onChanged;
   Function(BuildContext)? deleteFunction;
+  Function(BuildContext)? editFunction;
 
   ToDoTile(
       {required this.taskName,
       required this.taskCompleted,
       required this.onChanged,
-      required this.deleteFunction});
+      required this.deleteFunction,
+      required this.editFunction});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,13 @@ class ToDoTile extends StatelessWidget {
             icon: Icons.delete,
             backgroundColor: Colors.red,
             borderRadius: BorderRadius.circular(10),
-          )
+          ),
+          SlidableAction(
+            onPressed: editFunction,
+            icon: Icons.edit_outlined,
+            backgroundColor: Colors.green,
+            borderRadius: BorderRadius.circular(10),
+          ),
         ],
       ),
       child: Container(
@@ -52,4 +60,5 @@ class ToDoTile extends StatelessWidget {
       ),
     );
   }
+
 }

@@ -15,10 +15,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    if(_myBox.get("TODOLIST")==null){
+    if (_myBox.get("TODOLIST") == null) {
       db.createInitialData();
     }
-    else{
+    else {
       db.loadDatabase();
     }
 
@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   ToDoDatabase db = ToDoDatabase();
 
   final _controller = TextEditingController();
+  var _newController = TextEditingController();
 
   void checkBoxChanged(bool? value, int index) {
     setState(() {
@@ -47,14 +48,15 @@ class _HomePageState extends State<HomePage> {
           onSave: saveNewTask,
           onCancel: () {
             Navigator.pop(context);
-          } ,
+          },
         );
       },
     );
   }
+
   void saveNewTask() {
     setState(() {
-      db.toDoList.add([_controller.text,false]);
+      db.toDoList.add([_controller.text, false]);
       _controller.clear();
     });
     Navigator.pop(context);
@@ -68,13 +70,33 @@ class _HomePageState extends State<HomePage> {
     db.updateDatabase();
   }
 
+  void editTask(int index) {
+    showDialog(context: context, builder: (context) {
+      _newController.text= db.toDoList[index][0];
+      return DialogBox(controller: _newController,
+          onSave: () {
+            setState(() {
+              db.toDoList[index][0] = _newController.text;
+              _newController.clear();
+            });
+            Navigator.pop(context);
+            db.updateDatabase();
+          },
+          onCancel: () {
+        Navigator.pop(context);
+
+          },);
+    },);
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.yellow.shade200,
         appBar: AppBar(
-          title: Text("TO DO"),
+          elevation: 0,
+          title: Text("TO DO",style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold),),
           centerTitle: true,
         ),
         floatingActionButton: FloatingActionButton(
@@ -88,7 +110,8 @@ class _HomePageState extends State<HomePage> {
                 taskName: db.toDoList[index][0],
                 taskCompleted: db.toDoList[index][1],
                 onChanged: (value) => checkBoxChanged(value, index),
-                deleteFunction: (context)=> deleteTask(index),
+                deleteFunction: (context) => deleteTask(index),
+                editFunction: (context) => editTask(index),
               );
             },
             separatorBuilder: (BuildContext context, int index) {
@@ -99,5 +122,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ));
   }
+
 
 }
