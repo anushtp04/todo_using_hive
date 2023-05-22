@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> tasks = [];
+  List<Map<String, dynamic>> filteredTasks = [];
+
   final tbox = Hive.box("myBox");
 
   @override
@@ -20,6 +22,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     loadTask();
   }
+
+  TextEditingController searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +59,11 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(
                   height: 30,
                 ),
-                SearchBox(),
+                SearchBox(searchController: searchController, searchOnChanged: (String value) {
+                  setState(() {
+                    filteredTasks = tasks.where((task) => task["task"].toString().toLowerCase().contains(value.toLowerCase())).toList();
+                  });
+                },),
                 SizedBox(
                   height: 20,
                 ),
@@ -91,7 +99,7 @@ class _HomePageState extends State<HomePage> {
                           ActionPane(motion: DrawerMotion(), children: [
                             SlidableAction(
                               onPressed: (context) =>
-                                  showForm(context, tasks[index]["key"]),
+                                  showForm(context, filteredTasks[index]["key"]),
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.black,
                               icon: Icons.edit,
@@ -101,7 +109,7 @@ class _HomePageState extends State<HomePage> {
                           ActionPane(motion: DrawerMotion(), children: [
                             SlidableAction(
                               onPressed: (context) =>
-                                  deleteTask(tasks[index]["key"]),
+                                  deleteTask(filteredTasks[index]["key"]),
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.black,
                               icon: Icons.delete,
@@ -111,18 +119,18 @@ class _HomePageState extends State<HomePage> {
                             contentPadding: EdgeInsets.only(
                                 left: 15, right: 15, top: 5, bottom: 5),
                             title: Text(
-                              tasks[index]["task"],
+                              filteredTasks[index]["task"],
                               style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                   decorationThickness: 2,
-                                  decoration: tasks[index]["isChecked"] ? TextDecoration.lineThrough : TextDecoration.none
+                                  decoration: filteredTasks[index]["isChecked"] ? TextDecoration.lineThrough : TextDecoration.none
                               ),
                             ),
                             leading: Checkbox(
                               activeColor: Colors.black,
-                              value: tasks[index]["isChecked"],
+                              value: filteredTasks[index]["isChecked"],
                               onChanged: (value) => checkBoxChanged(value!, index),
                             ),
                           ),
@@ -133,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                     Divider(
                       height: 15,
                     ),
-                itemCount: tasks.length,
+                itemCount: filteredTasks.length,
               ),
             ),
           ),
@@ -201,6 +209,7 @@ class _HomePageState extends State<HomePage> {
                       }
 
                       task_controller.text = "";
+                      searchController.clear();
                       Navigator.pop(context);
                     },
                     child: Text(id == null ? "CREATE" : "UPDATE"),
@@ -222,10 +231,11 @@ class _HomePageState extends State<HomePage> {
   void loadTask() {
     final data = tbox.keys.map((id) {
       final values = tbox.get(id);
-      return {"key": id, "task": values["task"], "isChecked" : false};
+      return {"key": id, "task": values["task"], "isChecked" : values["isChecked"] ?? false,};
     }).toList();
     setState(() {
       tasks = data.reversed.toList();
+      filteredTasks = tasks;
     });
   }
 
@@ -240,8 +250,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   checkBoxChanged(bool? value, int index) {
+    final taskId = tasks[index]["key"];
+    tbox.put(taskId, {"task": tasks[index]["task"], "isChecked": value});
     setState(() {
-      tasks[index]["isChecked"] = !tasks[index]["isChecked"];
+      tasks[index]["isChecked"] = value;
     });
   }
 

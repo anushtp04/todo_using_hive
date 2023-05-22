@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class SearchBox extends StatelessWidget {
 
+  final TextEditingController searchController;
+  final Function(String) searchOnChanged;
 
-   SearchBox({
-    super.key,
-  });
+  SearchBox({required this.searchController,required this.searchOnChanged});
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +28,8 @@ class SearchBox extends StatelessWidget {
         ]
       ),
       child: TextField(
+        onChanged: searchOnChanged,
+        controller: searchController,
         decoration: InputDecoration(
             border: InputBorder.none,
             prefixIcon: Icon(Icons.search),
@@ -36,4 +40,5 @@ class SearchBox extends StatelessWidget {
       ),
     );
   }
+
 }
