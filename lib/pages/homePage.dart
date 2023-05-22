@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:todo_using_hive/data/database.dart';
-import 'package:todo_using_hive/util/dialog_box.dart';
-import 'package:todo_using_hive/util/todo_tile.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todo_using_hive/util/searchBox.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -12,116 +12,215 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> tasks = [];
+  final tbox = Hive.box("myBox");
 
   @override
   void initState() {
-    if (_myBox.get("TODOLIST") == null) {
-      db.createInitialData();
-    }
-    else {
-      db.loadDatabase();
-    }
-
     super.initState();
+    loadTask();
   }
 
-  final _myBox = Hive.box("myBox");
-
-  ToDoDatabase db = ToDoDatabase();
-
-  final _controller = TextEditingController();
-  var _newController = TextEditingController();
-
-  void checkBoxChanged(bool? value, int index) {
-    setState(() {
-      db.toDoList[index][1] = !db.toDoList[index][1];
-    });
-    db.updateDatabase();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade300,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.grey.shade300,
+        leading: IconButton(
+            onPressed: () {}, icon: Icon(Icons.menu, color: Colors.black)),
+        actions: [
+          IconButton(
+              onPressed: () => null,
+              icon: Icon(
+                Icons.add,
+                color: Colors.black,
+                size: 30,
+              )),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Welcome Anush!",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                SearchBox(),
+                SizedBox(
+                  height: 20,
+                ),
+                Text(
+                  "My Tasks",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700),
+                )
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: tasks.isEmpty
+                  ? Center(
+                      child: Text(
+                        "No Data",
+                        style: TextStyle(
+                            fontSize: 26, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemBuilder: (context, index) => ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          color: Colors.white,
+                          child: Slidable(
+                            startActionPane:
+                                ActionPane(motion: DrawerMotion(), children: [
+                              SlidableAction(
+                                onPressed: (context) =>
+                                    showForm(context, tasks[index]["key"]),
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.black,
+                                icon: Icons.edit,
+                              ),
+                            ]),
+                            endActionPane:
+                                ActionPane(motion: DrawerMotion(), children: [
+                              SlidableAction(
+                                onPressed: (context) =>
+                                    deleteTask(tasks[index]["key"]),
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.black,
+                                icon: Icons.delete,
+                              ),
+                            ]),
+                            child: ListTile(
+                              contentPadding: EdgeInsets.only(
+                                  left: 15, right: 15, top: 5, bottom: 5),
+                              title: Text(
+                                tasks[index]["task"],
+                                style: TextStyle(color: Colors.black),
+                              ),
+                              leading: Icon(Icons.check_box),
+                            ),
+                          ),
+                        ),
+                      ),
+                      separatorBuilder: (context, index) => Divider(
+                        height: 15,
+                      ),
+                      itemCount: tasks.length,
+                    ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.pink,
+        onPressed: () {
+          showForm(context, null);
+        },
+        child: Icon(Icons.add),
+      ),
+    );
   }
 
-  void createNewTask() {
+  TextEditingController task_controller = TextEditingController();
+
+  void showForm(BuildContext context, int? id) async {
+    if (id != null) {
+      final existingTask = tasks.firstWhere((data) => data["key"] == id);
+      task_controller.text = existingTask["task"];
+    }
+
     showDialog(
       context: context,
       builder: (context) {
-        return DialogBox(
-          controller: _controller,
-          onSave: saveNewTask,
-          onCancel: () {
-            Navigator.pop(context);
-          },
+        return AlertDialog(
+          backgroundColor: Colors.grey.shade300,
+          title: Text("Tasks"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: task_controller,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: "Task details",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text("CANCEL"),
+                  ),
+                  SizedBox(
+                    width: 5,
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (id == null) {
+                        createTask({"task": task_controller.text});
+                      }
+                      if (id != null) {
+                        updateTask(id, {"task": task_controller.text});
+                      }
+
+                      task_controller.text = "";
+                      Navigator.pop(context);
+                    },
+                    child: Text(id == null ? "CREATE" : "UPDATE"),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  void saveNewTask() {
+  Future<void> createTask(Map<String, dynamic> myTask) async {
+    await tbox.add(myTask);
+    loadTask();
+  }
+
+  void loadTask() {
+    final data = tbox.keys.map((id) {
+      final values = tbox.get(id);
+      return {"key": id, "task": values["task"]};
+    }).toList();
     setState(() {
-      db.toDoList.add([_controller.text, false]);
-      _controller.clear();
+      tasks = data.reversed.toList();
     });
-    Navigator.pop(context);
-    db.updateDatabase();
   }
 
-  void deleteTask(int index) {
-    setState(() {
-      db.toDoList.removeAt(index);
-    });
-    db.updateDatabase();
+  Future<void> deleteTask(int myTask) async {
+    await tbox.delete(myTask);
+    loadTask();
   }
 
-  void editTask(int index) {
-    showDialog(context: context, builder: (context) {
-      _newController.text= db.toDoList[index][0];
-      return DialogBox(controller: _newController,
-          onSave: () {
-            setState(() {
-              db.toDoList[index][0] = _newController.text;
-              _newController.clear();
-            });
-            Navigator.pop(context);
-            db.updateDatabase();
-          },
-          onCancel: () {
-        Navigator.pop(context);
-
-          },);
-    },);
+  Future<void> updateTask(int id, Map<String, dynamic> myTask) async {
+    await tbox.put(id, myTask);
+    loadTask();
   }
-
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Colors.yellow.shade200,
-        appBar: AppBar(
-          elevation: 0,
-          title: Text("TO DO",style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold),),
-          centerTitle: true,
-        ),
-        floatingActionButton: FloatingActionButton(
-            onPressed: () => createNewTask(), child: Icon(Icons.add)),
-        body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: ListView.separated(
-            itemCount: db.toDoList.length,
-            itemBuilder: (context, index) {
-              return ToDoTile(
-                taskName: db.toDoList[index][0],
-                taskCompleted: db.toDoList[index][1],
-                onChanged: (value) => checkBoxChanged(value, index),
-                deleteFunction: (context) => deleteTask(index),
-                editFunction: (context) => editTask(index),
-              );
-            },
-            separatorBuilder: (BuildContext context, int index) {
-              return Divider(
-                height: 20,
-              );
-            },
-          ),
-        ));
-  }
-
-
 }
