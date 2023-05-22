@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class SearchBox extends StatelessWidget {
-  const SearchBox({
+
+
+   SearchBox({
     super.key,
   });
 

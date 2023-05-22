@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {}, icon: Icon(Icons.menu, color: Colors.black)),
         actions: [
           IconButton(
-              onPressed: () => null,
+              onPressed: () => showForm(context, null),
               icon: Icon(
                 Icons.add,
                 color: Colors.black,
@@ -74,55 +74,67 @@ class _HomePageState extends State<HomePage> {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: tasks.isEmpty
                   ? Center(
-                      child: Text(
-                        "No Data",
-                        style: TextStyle(
-                            fontSize: 26, fontWeight: FontWeight.bold),
-                      ),
-                    )
+                child: Text(
+                  "No Data",
+                  style: TextStyle(
+                      fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+              )
                   : ListView.separated(
-                      itemBuilder: (context, index) => ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          color: Colors.white,
-                          child: Slidable(
-                            startActionPane:
-                                ActionPane(motion: DrawerMotion(), children: [
-                              SlidableAction(
-                                onPressed: (context) =>
-                                    showForm(context, tasks[index]["key"]),
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.black,
-                                icon: Icons.edit,
+                itemBuilder: (context, index) =>
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        color: Colors.white,
+                        child: Slidable(
+                          startActionPane:
+                          ActionPane(motion: DrawerMotion(), children: [
+                            SlidableAction(
+                              onPressed: (context) =>
+                                  showForm(context, tasks[index]["key"]),
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.black,
+                              icon: Icons.edit,
+                            ),
+                          ]),
+                          endActionPane:
+                          ActionPane(motion: DrawerMotion(), children: [
+                            SlidableAction(
+                              onPressed: (context) =>
+                                  deleteTask(tasks[index]["key"]),
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.black,
+                              icon: Icons.delete,
+                            ),
+                          ]),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.only(
+                                left: 15, right: 15, top: 5, bottom: 5),
+                            title: Text(
+                              tasks[index]["task"],
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  decorationThickness: 2,
+                                  decoration: tasks[index]["isChecked"] ? TextDecoration.lineThrough : TextDecoration.none
                               ),
-                            ]),
-                            endActionPane:
-                                ActionPane(motion: DrawerMotion(), children: [
-                              SlidableAction(
-                                onPressed: (context) =>
-                                    deleteTask(tasks[index]["key"]),
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.black,
-                                icon: Icons.delete,
-                              ),
-                            ]),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.only(
-                                  left: 15, right: 15, top: 5, bottom: 5),
-                              title: Text(
-                                tasks[index]["task"],
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              leading: Icon(Icons.check_box),
+                            ),
+                            leading: Checkbox(
+                              activeColor: Colors.black,
+                              value: tasks[index]["isChecked"],
+                              onChanged: (value) => checkBoxChanged(value!, index),
                             ),
                           ),
                         ),
                       ),
-                      separatorBuilder: (context, index) => Divider(
-                        height: 15,
-                      ),
-                      itemCount: tasks.length,
                     ),
+                separatorBuilder: (context, index) =>
+                    Divider(
+                      height: 15,
+                    ),
+                itemCount: tasks.length,
+              ),
             ),
           ),
         ],
@@ -170,7 +182,10 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      task_controller.text = "";
+                    },
                     child: Text("CANCEL"),
                   ),
                   SizedBox(
@@ -207,7 +222,7 @@ class _HomePageState extends State<HomePage> {
   void loadTask() {
     final data = tbox.keys.map((id) {
       final values = tbox.get(id);
-      return {"key": id, "task": values["task"]};
+      return {"key": id, "task": values["task"], "isChecked" : false};
     }).toList();
     setState(() {
       tasks = data.reversed.toList();
@@ -223,4 +238,12 @@ class _HomePageState extends State<HomePage> {
     await tbox.put(id, myTask);
     loadTask();
   }
+
+  checkBoxChanged(bool? value, int index) {
+    setState(() {
+      tasks[index]["isChecked"] = !tasks[index]["isChecked"];
+    });
+  }
+
+
 }
